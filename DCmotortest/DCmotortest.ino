@@ -20,7 +20,7 @@ String address= "http://165.227.76.232:3000/nmk2146/running";
 //Servo connection
 Servo myServo;
 int servoPin = 2;
-int servoPos = 0;
+int servoPos;
 const int servoRes = 16;
 
 //PWM for Servo
@@ -44,6 +44,7 @@ int lastPot3 = 0;
 int potDelta = 0;
 
 //button pin
+int bigbuttonPin = 35;
 int buttonPin = 15;
 boolean rotstate = false;
 
@@ -59,7 +60,7 @@ void setup() {
   Serial.begin(115200);
 
   //wifi setup
-  /*WiFi.begin(ssid_Router, password_Router);
+  WiFi.begin(ssid_Router, password_Router);
   Serial.println(String("Connecting to ")+ssid_Router);
   while (WiFi.status() != WL_CONNECTED){
     delay(500);
@@ -67,7 +68,7 @@ void setup() {
   }
   Serial.println("\nConnected, IP address: ");
   Serial.println(WiFi.localIP());
-  Serial.println("Setup End");*/
+  Serial.println("Setup End");
 
   //Stepper setup
   myStepper.setSpeed(15);
@@ -96,6 +97,7 @@ void setup() {
 
   //button setup
   pinMode(buttonPin, INPUT);
+  pinMode(bigbuttonPin, INPUT);
 
   //attach control pin to motor channel
   ledcAttachPin(enA, channel);
@@ -105,25 +107,23 @@ void setup() {
 }
 
 void loop() {
-
-  Serial.println("loop");
   //Servo motor pot analogRead
   servoPos = analogRead(potControl2);
   servoPos = map(servoPos, 0, 1023, 0, 180);
   setServo(servoPos);
   
   //DC motor pot analogRead
-  int rotationSpeed = analogRead(potControl);
+  /*int rotationSpeed = analogRead(potControl);*/
 
   //DC motor rotation direction button query
-  if(digitalRead(buttonPin) == HIGH){
+  /*if(digitalRead(buttonPin) == HIGH){
     rotstate = !rotstate;
     motorSwitchDir(rotstate);
     delay(200);
-  }
+  }*/
 
   //Drive DC motor
-  //driveDCMotor(rotationSpeed);
+  /*driveDCMotor(rotationSpeed);*/
 
   
   //Drive Stepper Motor
@@ -131,10 +131,27 @@ void loop() {
   int potDelta = currPot - lastPot3;
   lastPot3 = currPot;
   driveStepperMotor(myStepper, potDelta);
+
+  
+  if(digitalRead(buttonPin) == HIGH){
+    routine();  
+  }
   
   //debugging print statements
   //Serial.println(rotationSpeed);
   //Serial.println(constrain(rotationSpeed, 0, 1024));
+}
+
+void routine(){ //ending routine requires pressing and holding until the claw stops moving
+  while(true){
+    Serial.println("doing a thing");
+    //open and close mouth while moving arm up and down
+    driveStepperMotor(myStepper, 122);
+    driveStepperMotor(myStepper, -122);
+    if(digitalRead(bigbuttonPin) == HIGH)
+    {break;}
+  }
+  delay(500);
 }
 
 void motorSwitchDir(boolean dir){
@@ -164,7 +181,7 @@ void driveDCMotor(int spd){
     ledcWrite(channel, 550+((float)spd/1024)*(1024-550));
   }
   else{
-    ledcWrite(channel, 0);  
+    ledcWrite(channel, 0);
   }
 }
 

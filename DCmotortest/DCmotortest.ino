@@ -16,6 +16,7 @@
 const char *ssid_Router  = "stationnebula"; //Enter the router name
 const char *password_Router = "E30M20B25"; //Enter the router password
 String address= "http://165.227.76.232:3000/nmk2146/running";
+int lastCheckTime = 0;
 
 //Servo connection
 Servo myServo;
@@ -107,6 +108,8 @@ void setup() {
 }
 
 void loop() {
+  checkAPI();
+  
   //Servo motor pot analogRead
   servoPos = analogRead(potControl2);
   servoPos = map(servoPos, 0, 1023, 0, 180);
@@ -140,6 +143,34 @@ void loop() {
   //debugging print statements
   //Serial.println(rotationSpeed);
   //Serial.println(constrain(rotationSpeed, 0, 1024));
+}
+
+void checkAPI(){
+  if(lastCheckTime > 10000){
+    if((WiFi.status() == WL_CONNECTED)) {
+      HTTPClient http;
+      http.begin(address);
+
+      int httpCode = http.GET(); // start connection and send HTTP header
+      if (httpCode == HTTP_CODE_OK) { 
+        String response = http.getString();
+        if (response.equals("false")) {
+          lastCheckTime = 0;
+        }
+        else if(response.equals("true")) {
+          lastCheckTime = 0;
+          routine();
+        }
+        Serial.println("Response was: " + response);
+      } else {
+        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+      }
+      http.end();
+    }
+  }
+  else{
+    lastCheckTime++;  
+  }
 }
 
 void routine(){ //ending routine requires pressing and holding until the claw stops moving
